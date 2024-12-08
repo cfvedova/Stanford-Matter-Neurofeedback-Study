@@ -1,0 +1,11 @@
+objects/Food 5.jpg
+objects/Food 5.jpg
+scenes/Lake 3.jpg
+scenes/Lake 3.jpg
+animals/Chipmunk 2.jpg
+animals/Chipmunk 2.jpg
+scenes/Lake 12.jpg
+scenes/Lake 12.jpg
+animals/Cat 5.jpg
+animals/Cat 5.jpg
+

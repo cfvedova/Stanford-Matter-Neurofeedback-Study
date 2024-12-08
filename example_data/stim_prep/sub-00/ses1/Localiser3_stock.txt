@@ -1,0 +1,16 @@
+animals/Dog 12.jpg
+neutral/Rocks 6.jpg
+neutral/Wall 1.jpg
+scenes/Beach 2.jpg
+people/Toast 1.jpg
+neutral/Roofing 1.jpg
+neutral/Cardboard 2.jpg
+objects/Flowers 2.jpg
+neutral/Bricks 1.jpg
+neutral/Bark 1.jpg
+objects/Alcohol 8.jpg
+objects/Wedding ring 1.jpg
+neutral/Dirt 1.jpg
+neutral/Wall 4.jpg
+people/Performance 2.jpg
+objects/Food 2.jpg

@@ -13,12 +13,12 @@ from utils.roi_prep import *
 
 
 # load map file
-wdir = 'D:/NFData/derivatives/rawdata_bv'
+wdir = 'D:/MatterNeurofeedback/derivatives/rawdata_bv'
 
-sub = 'sub-00'
+sub = 'sub-07'
 ses = 1
-RUNS = ['2','3']
-func_dir = f'{wdir}/{sub}/ses{ses}/func'
+RUNS = ['3','4']
+func_dir = f'{wdir}/{sub}/ses-0{ses}/func'
 
 
 # Make ROI directory where the output will be saved
@@ -29,7 +29,7 @@ os.makedirs(outdir, exist_ok=True)
 fmr_sum = []
 vol_nr = 0
 for run in RUNS:
-    hdr, fmr_data = fmr.read_fmr(f'{func_dir}/{sub}_ses-0{ses}_dir-AP_task-localiser{run}_run-0{run}_SCCTBL_3DMCTS_LTR_THPFFT0.0090Hz_SD3DSS3.60mm.fmr')
+    hdr, fmr_data = fmr.read_fmr(f'{func_dir}/{sub}_ses-0{ses}_dir-AP_task-localiser{run}_run-0{run}_SCCTBL_3DMCTS_LTR_THPFFT0.0090Hz_SD3DSS3.60mm.fmr') #change this
     fmr_sum.append(np.sum(fmr_data, axis=3)[:,:,:,None])
     vol_nr += fmr_data.shape[-1]
 
@@ -147,7 +147,7 @@ sel_tmap = np.array(tmap)[new_flatten_mask]
 coords = np.where(new_vol_mask[::-1,::-1,:] != 0)
 sel_func_coords = np.array([[x, y, z] for x, y, z in zip(coords[0], coords[1], coords[2])])
 
-mask_mosaic_plot(mean_epi, new_vol_mask, f'{outdir}/NFTarger_roi.jpg')
+mask_mosaic_plot(mean_epi, new_vol_mask[::-1,:,:], f'{outdir}/NFTarger_roi.jpg')
 
 write_roi(f'{outdir}/NFTarget.roi', sel_func_coords)
 print(f'Number of selected voxels: {len(sel_tmap)}\n')

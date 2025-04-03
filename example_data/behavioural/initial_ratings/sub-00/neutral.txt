@@ -1,8 +1,0 @@
-neutral/Roofing 1.jpg
-neutral/Cardboard 2.jpg
-neutral/Dirt 1.jpg
-neutral/Bark 1.jpg
-neutral/Wall 4.jpg
-neutral/Wall 1.jpg
-neutral/Rocks 6.jpg
-neutral/Bricks 1.jpg

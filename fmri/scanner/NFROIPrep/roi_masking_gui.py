@@ -14,7 +14,10 @@ from utils.roi import write_roi, read_roi
 import glob, os, sys
 from utils.expyriment_io_extras import tbvnetworkinterface
 import logging
-from utils.map import read_map
+import ants
+import dicom2nifti
+import shutil
+
 
 
 def remove_small_clusters(mask, coords_to_delete, min_cluster_size):
@@ -177,7 +180,7 @@ def mask_mosaic_plot(mean_epi,mask, outfile):
 
     grid_size = int(np.ceil(np.sqrt(mean_epi.shape[2])))
     plt.style.use('dark_background')
-    fig, axes = plt.subplots(grid_size, grid_size, figsize=(20, 20))
+    fig, axes = plt.subplots(grid_size, grid_size, figsize=(10, 10))
     axes = axes.ravel()  # Flatten the 2D array of axes for easier iteration
 
     # Plot each slice
@@ -279,7 +282,7 @@ class Window(QMainWindow):
         #update also the log file with the same message TO DO add log
         #self.
 
-    def openDirectoryDialog(self, msg):
+    def openDirectoryDialog(self, msg, step=''):
 
         try:
             # Open the directory selection dialog
@@ -287,14 +290,17 @@ class Window(QMainWindow):
 
             # If a directory was selected, display its path in the line edit
             if directory:
-                self.directoryLineEdit.setText(directory)
-                self.log_message(f'Set working directory: {directory}')
-                self.wdir = directory
-                self.get_roi_files()
-
+                if step == 'SWD': # set working directory
+                    self.directoryLineEdit.setText(directory)
+                    self.log_message(f'Set working directory: {directory}')
+                    self.wdir = directory
+                    self.get_roi_files()
+                if step == 'ROI-update':
+                    self.roi_integration_dir.setText(directory)
+                    self.log_message(f'Found ROI-integration directory: {directory}')
 
             else:
-                self.log_message(f'No working directory set')
+                self.log_message(f'No directory selected')
 
 
         except Exception as e:
@@ -310,15 +316,17 @@ class Window(QMainWindow):
 
             # If a directory was selected, display its path in the line edit
             if file[0]:
-                self.fileLineEdit.setText(file[0]) 
 
                 self.log_message(f'{msg}: {file[0]}')
                 if step=='EPI':
+                    self.fileLineEdit.setText(file[0])
                     self.epi_ref = file[0]
                 elif step=='BVS':
                     self.bvsbutton.setEnabled(True)
+                    self.roiFileLineEdit.setText(file[0])
                 elif step=='ROI-update':
                     self.roiIntegrationButton.setEnabled(True)
+                    self.currentRoiFile.setText(file[0])
 
             else:
                 self.log_message(f'No file selected.')
@@ -329,26 +337,6 @@ class Window(QMainWindow):
 
         return file
 
-    def openFileDialog2(self, msg, filter_fmt):
-
-        try:
-            # Open the directory selection dialog
-            file = QFileDialog.getOpenFileName(self, msg, filter=filter_fmt) # it returns a tuple, the first element is the filename
-
-            # If a directory was selected, display its path in the line edit
-            if file[0]:
-                self.roiFileLineEdit.setText(file[0])
-
-                self.log_message(f'{msg}: {file[0]}')
-                self.bvsbutton.setEnabled(True)
-            else:
-                self.log_message(f'No ROI file selected.')
-
-        except Exception as e:
-            self.log_message(f'\n{str(e)}\n')
-            return
-
-        return file
 
     def get_roi_files(self):
 
@@ -378,6 +366,8 @@ class Window(QMainWindow):
 
     def mask_emonet_with_epi(self):
 
+        # review nifti save (left and righht is flipped)
+
         self.log_message('\n'+'='*80)
         self.log_message('\nMasking Emonet ROI using EPI mask ... ')
 
@@ -401,7 +391,7 @@ class Window(QMainWindow):
         mean_epi = np.mean(data, axis=3)
 
         # save mean image and mask as nifti
-        nb.save(nb.Nifti1Image(mean_epi, affine=np.eye(4)), f'{self.outdir}/mean_epi.nii.gz')
+        nb.save(nb.Nifti1Image(mean_epi[::-1,:,], affine=np.eye(4)), f'{self.outdir}/mean_epi.nii.gz')
 
         epi_mask, threshold = heuristic_epi_mask(mean_epi,
                                                     lower_cutoff=float(self.low_cutoff.text()),
@@ -432,7 +422,7 @@ class Window(QMainWindow):
             emo_mask[coord[0],coord[1],coord[2]]=1
 
         emo_mask = emo_mask[:,::-1,:]
-        nb.save(nb.Nifti1Image(emo_mask.astype(int), affine=np.eye(4)), f'{self.outdir}/emo_mask.nii.gz')
+        nb.save(nb.Nifti1Image(emo_mask.astype(int)[::-1,:,], affine=np.eye(4)), f'{self.outdir}/emo_mask.nii.gz')
 
         subcort_mask = np.zeros(epi_mask.shape)
         for coord in subcort:
@@ -440,15 +430,15 @@ class Window(QMainWindow):
 
         subcort_mask = subcort_mask[:,::-1,:]
 
-        nb.save(nb.Nifti1Image(subcort_mask.astype(int), affine=np.eye(4)), f'{self.outdir}/subcort_mask.nii.gz')
+        nb.save(nb.Nifti1Image(subcort_mask.astype(int)[::-1,:,], affine=np.eye(4)), f'{self.outdir}/subcort_mask.nii.gz')
 
         # mask emonet with epi mask
         masked_emonet = emo_mask*epi_mask
-        nb.save(nb.Nifti1Image(masked_emonet.astype(int), affine=np.eye(4)), f'{self.outdir}/emo_mask_epi_masked.nii.gz')
+        nb.save(nb.Nifti1Image(masked_emonet.astype(int)[::-1,:,], affine=np.eye(4)), f'{self.outdir}/emo_mask_epi_masked.nii.gz')
 
         # add subcortical and merge
         masked_emonet_subcort = np.logical_or(masked_emonet, subcort_mask)
-        nb.save(nb.Nifti1Image(masked_emonet_subcort.astype(int), affine=np.eye(4)), f'{self.outdir}/emo_mask_epi_masked_subcort.nii.gz')
+        nb.save(nb.Nifti1Image(masked_emonet_subcort.astype(int)[::-1,:,], affine=np.eye(4)), f'{self.outdir}/emo_mask_epi_masked_subcort.nii.gz')
 
         coords = np.where(masked_emonet_subcort[:,::-1,:] != 0)
         coords = np.array([[x,y,z] for x,y,z in zip(coords[0],coords[1],coords[2])])
@@ -527,7 +517,7 @@ class Window(QMainWindow):
     def roi_update(self):
 
         self.log_message('\n' + '=' * 80)
-        self.log_message('\nPerform across-session ROI integration ...')
+        self.log_message('\nPerform across-session ROI integration ...\n')
 
         try:
             TBV = tbvnetworkinterface.TbvNetworkInterface('localhost', 55555)
@@ -536,15 +526,90 @@ class Window(QMainWindow):
             self.log_message(str(e))
             return
 
-        self.current_roi_file = self.currentRoiFile.text()
-        self.previous_roi_file = self.previousRoiFile.text()
-        outdir = os.path.dirname(self.previous_roi_file)
+
+        # chekc files in the ROI-integration directory
 
         try:
+
+            # -------------------------- ANTS transformation ses-01 to ses-03  ------------------------#
+
+            self.log_message('\nPerform across-session registration (ANTS) ...')
+            wdir = self.roi_integration_dir.text()
+            self.log_message(f'Working directory: {wdir}')
+
+            # transform roi and map from ses-01 to ses-03 using ANTS (relies on dicom2nifti)
+            dicom2nifti.convert_directory(f'{wdir}/dcm/ses-01/', f'{wdir}/dcm/ses-01/', compression=True, reorient=True)
+            dicom2nifti.convert_directory(f'{wdir}/dcm/ses-03/', f'{wdir}/dcm/ses-03/', compression=True, reorient=True)
+
+            # rename NIFTI files
+            file = glob.glob(f'{wdir}/dcm/ses-01/*nii.gz')[0]
+            shutil.copyfile(file, f'{wdir}/dcm/ses-01/ses-01_ref.nii.gz')
+
+            file = glob.glob(f'{wdir}/dcm/ses-03/*nii.gz')[0]
+            shutil.copyfile(file, f'{wdir}/dcm/ses-03/ses-03_ref.nii.gz')
+
+            ses1_ref = nb.load(f'{wdir}/dcm/ses-01/ses-01_ref.nii.gz')
+            ses1_affine = ses1_ref.affine
+
+            ses3_ref = nb.load(f'{wdir}/dcm/ses-03/ses-03_ref.nii.gz')
+            ses3_affine = ses3_ref.affine
+
+            # Copy correct affine transformation to the other files (map and roi mask)
+            temp = nb.load(f'{wdir}/roi/ses-01/pos-neu_tmap.nii.gz').get_fdata()[::-1,:,:]
+            nb.save(nb.Nifti1Image(temp, affine=ses1_affine), f'{wdir}/roi/ses-01/pos-neu_tmap_affine.nii.gz')
+
+            temp = nb.load(f'{wdir}/roi/ses-01/roi_mask_5%.nii.gz').get_fdata()[::-1,:,:]
+            nb.save(nb.Nifti1Image(temp, affine=ses1_affine), f'{wdir}/roi/ses-01/roi_mask_5%_affine.nii.gz')
+
+            # perform Affine transformation using ANTS
+            fixed = ants.image_read(f'{wdir}/dcm/ses-03/ses-03_ref.nii.gz')
+            moving = ants.image_read(f'{wdir}/dcm/ses-01/ses-01_ref.nii.gz')
+            fixed.plot(overlay=moving,
+                       title='Before Registration')  # changed function ants/viz/plot.py, overlay_cmap="hot", overlay_alpha=0.5,
+            mytx = ants.registration(fixed=fixed, moving=moving, type_of_transform='Affine')
+            #print(mytx)
+            warped_moving = mytx['warpedmovout']
+            fixed.plot(overlay=warped_moving,
+                       title='After Registration')
+
+            mywarpedimage = ants.apply_transforms(fixed=fixed, moving=moving,
+                                                  transformlist=mytx['fwdtransforms'], interpolator='bSpline')
+
+            ants.image_write(mywarpedimage, f'{wdir}/trf/ses-01_ref_2_ses-03_ref_affine.nii.gz')
+            affine_mat = ants.read_transform(mytx['fwdtransforms'][0])
+            ants.write_transform(affine_mat, f'{wdir}/trf/ses-01_ref_2_ses-03_ref_affine.mat')
+            ants.write_transform(affine_mat, f'{wdir}/trf/ses-01_ref_2_ses-03_ref_affine.txt')
+
+            affine_mat_inv = ants.read_transform(mytx['invtransforms'][0])
+            ants.write_transform(affine_mat, f'{wdir}/trf/ses-01_ref_2_ses-03_ref_affine_inv.mat')
+            ants.write_transform(affine_mat, f'{wdir}/trf/ses-01_ref_2_ses-03_ref_affine_inv.txt')
+
+            map_file = f'{wdir}/roi/ses-01/pos-neu_tmap_affine.nii.gz'
+            map_img = ants.image_read(map_file)
+            mywarpedimage = ants.apply_transforms(fixed=fixed, moving=map_img,
+                                                  transformlist=mytx['fwdtransforms'],
+                                                  interpolator='bSpline')
+            ants.image_write(mywarpedimage, f'{wdir}/trf/ses-01_map_2_ses-03_ref_affine.nii.gz')
+
+            # Apply transformation to map and mask file
+            roi_file = f'{wdir}/roi/ses-01/roi_mask_5%_affine.nii.gz'
+            roi_img = ants.image_read(roi_file)
+            mywarpedimage = ants.apply_transforms(fixed=fixed, moving=roi_img,
+                                                  transformlist=mytx['fwdtransforms'],
+                                                  interpolator='nearestNeighbor')
+            ants.image_write(mywarpedimage, f'{wdir}/trf/ses-01_roi_2_ses-03_ref_affine.nii.gz')
+
+            self.log_message('\nDone.\n')
+
+            # -------------------------------------------- ROI integration ---------------------------------------------#
+
+            self.log_message('\nStarting ROI integration ...\n')
+
+            self.current_roi_file = self.currentRoiFile.text()
+
             cur_coords = read_roi(self.current_roi_file)
 
-
-            self.tmap = [TBV.get_map_value_of_voxel(0, coord)[0]
+            cur_tmap = [TBV.get_map_value_of_voxel(0, coord)[0]
                          # it assumes that the right contrast is selected from the TBV gui
                          for coord in cur_coords]
 
@@ -553,15 +618,80 @@ class Window(QMainWindow):
             # create 3D mask from functional coordinates
             cur_tmap_vol = np.zeros(self.vol_dim)
 
-            np.savetxt(f'{outdir}/current_roi_tmap.txt', self.tmap)
-
-            self.log_message(f'Number of voxels of the current ROI: {len(self.tmap)}\n')
-            self.log_message(f'Current t-map saved to file: {outdir}/current_roi_tmap.txt\n')
+            self.log_message(f'Number of voxels of the current ROI: {len(cur_tmap)}\n')
 
             for i,coord in enumerate(cur_coords):
-                cur_tmap_vol[coord[0],coord[1],coord[2]]=self.tmap[i]
+                cur_tmap_vol[coord[0],coord[1],coord[2]]=cur_tmap[i]
 
-            hdr, map_data = map.read_map(f'{outdir}/pos-neu.map')
+            # save map to nifti
+            nb.save(nb.Nifti1Image(cur_tmap_vol[:,::-1,:], affine=ses3_affine), f'{wdir}/ses-03_roi_tmap.nii.gz' )
+            self.log_message(f'Current ROI t-map saved to file: {wdir}/ses-03_roi_tmap.nii.gz\n')
+
+            cur_tmap_vol = cur_tmap_vol[::-1,:,:] # since it was created from TBV coordinates
+
+            # import new transformed map and coordinates as nifti and convert to TBV convention
+            prev_tmap_vol = nb.load(f'{wdir}/trf/ses-01_map_2_ses-03_ref_affine.nii.gz').get_fdata()[::-1,::-1,:]
+            prev_roi_mask = nb.load(f'{wdir}/trf/ses-01_roi_2_ses-03_ref_affine.nii.gz').get_fdata()[::-1,::-1,:]
+
+            prev_trf_coords = np.where(prev_roi_mask[::-1,:,:] != 0)
+            prev_trf_coords = np.array([[x, y, z] for x, y, z in zip(prev_trf_coords[0], prev_trf_coords[1], prev_trf_coords[2])])
+
+            self.log_message(f'Number of voxels of the ses-01 (transformed) ROI: {np.sum(prev_roi_mask).astype(int)}\n')
+
+            write_roi(f'{wdir}/ses-01_roi_2_ses-03_ref_affine.roi', prev_trf_coords)
+            self.log_message(f'ses-01 (transformed) ROI saved to file: {wdir}/ses-01_roi_2_ses-03_ref_affine.roi\n')
+
+            # mask transformed ses-01 tmap and save to nifti
+            prev_tmap_vol = prev_tmap_vol * prev_roi_mask
+
+            nb.save(nb.Nifti1Image(prev_tmap_vol[::-1,::-1,:], affine=ses3_affine), f'{wdir}/ses-01_trf_roi_tmap.nii.gz' )
+            self.log_message(f'ses-01 (transfromed) ROI t-map saved to file: {wdir}/ses-01_trf_roi_tmap.nii.gz\n')
+
+            # new ROI average dimension
+            update_roi_dim = np.mean([len(prev_trf_coords),len(cur_tmap)]).astype(int)
+            self.log_message(f'Max number of voxels of the updated ROI: {update_roi_dim}\n')
+
+            # merge maps from to sessions with a sum to weight more the common areas
+            # use effect size map cohen's d = t/sqrt(df_res+1)
+            merged_map = cur_tmap_vol/np.sqrt(650 +1) + prev_tmap_vol/np.sqrt(1302 +1)
+            #merged_map = cur_tmap_vol + prev_tmap_vol
+
+            merged_map_flatten = merged_map[merged_map!=0]
+
+            flatten_mask = np.zeros(len(merged_map_flatten))
+
+            idx = np.argsort(merged_map_flatten)[::-1] # sort in descending order
+            print(merged_map_flatten[idx[0]])
+            print(merged_map_flatten[idx[-1]])
+
+            idx = idx[:update_roi_dim]
+            flatten_mask[idx] = 1
+
+            # create 3D mask from functional coordinates\
+            merged_coords = np.where(merged_map != 0)
+            merged_coords = np.array([[x, y, z] for x, y, z in zip(merged_coords[0], merged_coords[1], merged_coords[2])])
+
+            vol_mask = np.zeros(self.vol_dim)
+            for i, coord in enumerate(merged_coords):
+                vol_mask[coord[0], coord[1], coord[2]] = 1
+
+            new_vol_mask, new_flatten_mask = remove_small_clusters(vol_mask,merged_coords[np.logical_not(flatten_mask),:],int(self.min_clust_size2.text()))
+
+            # selected values from the current t-map
+            sel_tmap = np.array(cur_tmap_vol[merged_map!=0])[new_flatten_mask]
+
+            # save the tvalues and the roi coordinates:
+            coords = np.where(new_vol_mask[::-1,:,:] != 0)
+            sel_func_coords = np.array([[x, y, z] for x, y, z in zip(coords[0], coords[1], coords[2])])
+
+            write_roi(f'{wdir}/NFTarget_updated.roi', sel_func_coords)
+            self.log_message(f'Number of selected voxels: {len(sel_tmap)}\n')
+            self.log_message(f'T-value threshold: {np.min(sel_tmap[sel_tmap != 0]):.2}\n')
+            self.log_message(f'NF Target ROI saved to file: {wdir}/NFTarget_updated.roi')
+
+            # save new roi to nifti
+            nb.save(nb.Nifti1Image(new_vol_mask[::-1, ::-1, :].astype(int), affine=ses3_affine),f'{wdir}/NFTarget_updated.nii.gz')
+            self.log_message(f'NF Target ROI saved to file: {wdir}/NFTarget_updated.nii.gz')
 
 
         except Exception as e:
@@ -589,7 +719,7 @@ class Window(QMainWindow):
         # Create a button to open the directory dialog
         self.browseButton1 = QPushButton("Select Working Directory", self)
         msg2 = "Select Working Directory (where the .roi files are stored)" 
-        self.browseButton1.clicked.connect(lambda: self.openDirectoryDialog(msg2))
+        self.browseButton1.clicked.connect(lambda: self.openDirectoryDialog(msg2, step='SWD'))
 
         hbox0 = QHBoxLayout()
         hbox0.setDirection(QBoxLayout.LeftToRight)        
@@ -685,7 +815,7 @@ class Window(QMainWindow):
         # Create a button to open the file dialog
         self.roiBrowseButton = QPushButton('Load ROI', self)
         msg3 = "Select EMONET .roi masked file to perform BVS"
-        self.roiBrowseButton.clicked.connect(lambda: self.openFileDialog2(msg3, '*.roi', step='BVS'))
+        self.roiBrowseButton.clicked.connect(lambda: self.openFileDialog(msg3, '*.roi', step='BVS'))
 
         #run best voxel selection
         hbox5 = QHBoxLayout()
@@ -745,27 +875,34 @@ class Window(QMainWindow):
         param_box3 = QLabel(self)
         param_box3.setText('Inter-session ROI integration')
 
+        # Create a line edit to display the selected directory path
+        self.roi_integration_dir = QLineEdit(self)
+        self.roi_integration_dir.setPlaceholderText("ROI-integration directory")
+        # Create a button to open the directory dialog
+        self.browseButton2 = QPushButton("Select ROI-integration directory", self)
+        msg4 = "Select ROI-integration directory"
+        self.browseButton2.clicked.connect(lambda: self.openDirectoryDialog(msg4, step='ROI-update'))
+
         self.currentRoiFile = QLineEdit(self)
         self.currentRoiFile.setPlaceholderText("Select the NFTarget.roi file from the current session.")
 
         # Create a button to open the file dialog
         self.roiBrowseButton2 = QPushButton('Load Current ROI', self)
-        msg4 = "Select the NFTarget.roi file from the current session."
-        self.roiBrowseButton2.clicked.connect(lambda: self.openFileDialog(msg4, '*.roi'))
+        msg5 = "Select the NFTarget.roi file from the current session."
+        self.roiBrowseButton2.clicked.connect(lambda: self.openFileDialog(msg5, '*.roi', step='ROI-update'))
 
-        self.previousRoiFile = QLineEdit(self)
-        self.currentRoiFile.setPlaceholderText("Select the NFTarget.roi file from the previous session.")
-
-        # Create a button to open the file dialog
-        self.roiBrowseButton3 = QPushButton('Load Previous ROI', self)
-        msg5 = "Select the NFTarget.roi file from the previous session."
-        self.roiBrowseButton3.clicked.connect(lambda: self.openFileDialog(msg5, '*.roi', step='ROI-update'))
 
         crt_idx_lb2 = QLabel(self)
         crt_idx_lb2.setText('TBV CTR Index [0-based]')
         self.ctr_idx2 = QLineEdit(self)
         self.ctr_idx2.setValidator(QDoubleValidator(0, 100, 0))
         self.ctr_idx2.setText('2')
+
+        min_clust_lb2 = QLabel(self)
+        min_clust_lb2.setText('Min Cluster Size')
+        self.min_clust_size2 = QLineEdit(self)
+        self.min_clust_size2.setValidator(QDoubleValidator(0, 1000, 0))
+        self.min_clust_size2.setText('50')
 
         self.roiIntegrationButton = QPushButton("Update ROI", self)
         self.roiIntegrationButton.setEnabled(False)
@@ -777,20 +914,21 @@ class Window(QMainWindow):
 
         hbox8 = QHBoxLayout()
         hbox8.setDirection(QBoxLayout.LeftToRight)
-        hbox8.addWidget(self.currentRoiFile)
-        hbox8.addStretch()
-        hbox8.addWidget(self.roiBrowseButton2)
+        hbox8.addWidget(self.roi_integration_dir)
+        hbox8.addWidget(self.browseButton2)
 
         hbox9 = QHBoxLayout()
         hbox9.setDirection(QBoxLayout.LeftToRight)
-        hbox9.addWidget(self.previousRoiFile)
-        hbox9.addStretch()
-        hbox9.addWidget(self.roiBrowseButton3)
+        hbox9.addWidget(self.currentRoiFile)
+        hbox9.addWidget(self.roiBrowseButton2)
 
         hbox10 = QHBoxLayout()
         hbox10.setDirection(QBoxLayout.LeftToRight)
         hbox10.addWidget(crt_idx_lb2)
         hbox10.addWidget(self.ctr_idx2)
+        hbox10.addStretch()
+        hbox10.addWidget(min_clust_lb2)
+        hbox10.addWidget(self.min_clust_size2)
         hbox10.addStretch()
         hbox10.addWidget(self.roiIntegrationButton)
 

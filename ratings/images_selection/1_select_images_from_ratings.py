@@ -9,6 +9,7 @@ emotions = ['EXCITEMENT','SEXUAL DESIRE','RECOGNITION', 'FAMILY LOVE', 'CONTENTM
 # corresponding emotion names from the Matter App
 emo_MatterAp = ['enthusiasm', 'sexualDesire', 'pride', 'nurturantLove','contentment', 'attachmentLove', 'amusement', 'pleasure', 'gratitude']
 
+sel_matter_emotions = ['RECOGNITION', 'FAMILY LOVE', 'FRIENDSHIP','PLEASURE']
 def read_ratings_stock(file_name):
 
 	images = []
@@ -21,7 +22,6 @@ def read_ratings_stock(file_name):
 	ratings_positive = ratings[:12]
 
 	return ratings_neutral, ratings_positive
-
 
 
 def select_images_stock(ratings_neutral, ratings_positive):
@@ -74,12 +74,18 @@ def assign_peak_label_matter(ratings):
 	image_labels = []
 	image_label_idx = []
 	peak_ratios = []
+	peak_value = []
 
 	for _, image in ratings.iterrows():
 
 		max_score = np.max(image.values[1:])
+		peak_value.append(max_score)
 		max_idx = np.where(image.values[1:] == max_score)[0]
 
+		idx_other_emo = list(np.arange(9))
+		idx_other_emo.remove([max_idx[0]])
+		idx_other_emo = np.array(idx_other_emo)
+		peak_ratios.append(max_score/np.mean(image.values[1:][idx_other_emo]))
 		temp_labels = []
 		peak_labels = col_name[max_idx]
 		for i,label in enumerate(col_name):
@@ -89,7 +95,7 @@ def assign_peak_label_matter(ratings):
 
 
 		image_labels.append(temp_labels)
-
+	'''
 	orig_image_labels = image_labels.copy()
 	for i,labels in enumerate(image_labels):
 
@@ -104,29 +110,46 @@ def assign_peak_label_matter(ratings):
 			image_labels[i] = emotions[emo_MatterAp.index(labels[0])] # replace with the name that will be used in the study
 
 	ratings['Label'] = image_labels
+	'''
+	study_labels = []
+	for items in image_labels:
+		temp = []
+		for lb in items:
+			temp.append(emotions[emo_MatterAp.index(lb)])
+		study_labels.append(temp)
 
-	# compute peak ratios
-	#ratings['Peak Ratio'] = peak_ratios
 
-	return ratings
+	outdict = pd.DataFrame({'Image ID': ratings['id'].values,
+			   'Peak Labels': [", ".join(items) for items in study_labels],
+			   'Peak Value': peak_value,
+			   'Peak Ratio': peak_ratios})
 
+	return outdict
 
-def compute_peak_ratio_matter(ratings):
+def select_images_matter(outdict):
 
+	seldict=[]
 
-	#ratings['Peak Ratio'][i] = ratings.values[i][idx_emo]/np.mean(ratings.values[i][idx_other_emo])
-	pass
+	for emo in sel_matter_emotions:
+		cur_emo_dict_idx=outdict['Peak Labels'].isin([emo])
+		cur_emo_dict = outdict[cur_emo_dict_idx]
+		cur_emo_dict=cur_emo_dict.sort_values(by=['Peak Value', 'Peak Ratio'], ascending=[False, False])
+		seldict.append(cur_emo_dict[:2])
+
+	seldict = pd.concat(seldict, ignore_index=True)
+
+	return seldict
 
 
 
 
 if __name__ == '__main__':
 
-	
 
 	wdir = 'C:/Users/assun/Documents/GitHub/MatterNeurofeedbackStudy/example_data/behavioural/initial_ratings'
+	#wdir = 'C:/Users/assun/Documents/Projects/MatterProject/initial_ratings'
 
-	sub = input('Insert subject ID (subxx): ')
+	sub = input('Insert subject ID (sub-xx): ')
 
 	rating_file_stock = glob.glob(f'{wdir}/{sub}/ratings*csv')
 
@@ -177,27 +200,22 @@ if __name__ == '__main__':
 
 		ratings = assign_peak_label_matter(orig_ratings)
 
+		ratings.to_excel(f'{wdir}/{sub}/matter_ratings_info.xlsx')
+
+		matter_images_dict = select_images_matter(ratings)
+
+		matter_images_dict.to_excel(f'{wdir}/{sub}/selected_matter_ratings_info.xlsx')
 		# write positive images to a text file
 		filename = f'{wdir}/{sub}/matter.txt'
 		with open(filename,'w') as f:
-
-			for img in positive_images:
+			for img in matter_images_dict['Image ID']:
 				f.write(f'{img}\n')
 
+		filename = f'{wdir}/{sub}/matter_EMOinfo.txt'
+		with open(filename, 'w') as f:
+			for i,img in enumerate(matter_images_dict['Image ID']):
+				f.write(f'{matter_images_dict["Peak Labels"][i]}_{img}\n')
 
-		# write summary graphs for positive and neutral images
-		#bar plot of the valence score
-		ratings_sorted = ratings_positive.sort_values(by = 'VALENCE')
-		fig, ax = plt.subplots(2,1, figsize=(10,5))
-		ax[0].barh(ratings_sorted['Image ID'],ratings_sorted['VALENCE'], alpha=0.8)
-		ax[0].set_title('Valence Score')
-		for emo in emotions:
-			ax[1].plot(np.arange(1,len(ratings_sorted)+1), ratings_sorted[emo])
-		ax[1].set_xticks(np.arange(1,len(ratings_sorted)+1))
-		ax[1].set_ylabel('Emotion Ratings')
-		ax[1].legend(emotions, loc=(-0.3,0))
-		plt.tight_layout()
-		plt.show()
 
 	except Exception as e:
 

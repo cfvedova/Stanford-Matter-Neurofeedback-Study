@@ -8,6 +8,8 @@ from utils.randomise import generate_random_sequence_2cond_maxCons, shuffle_with
 SESSION_NR = 3 # add loop for session repetition later
 NR_LOC_RUNS = 1
 NR_NF_RUNS = 3
+NR_TRANS_RUNS = 0
+NR_RECALL_RUNS = 0
 NR_BLOCKS = 16
 
 sub_name = input('Insert the subject name: ')
@@ -24,7 +26,7 @@ os.makedirs(outdir, exist_ok=True)
 if group == 'stock':
 
     # create the session folder
-    ses_folder = f'{outdir}/ses{SESSION_NR}'
+    ses_folder = f'{outdir}/ses-0{SESSION_NR}'
     os.makedirs(ses_folder, exist_ok=True)
 
     # get the ratings of for the stock images
@@ -39,7 +41,7 @@ if group == 'stock':
     for run in range(NR_NF_RUNS):
 
         # create the run folder
-        run_folder = f'{outdir}/ses{SESSION_NR}/runNF{run + 1}'
+        run_folder = f'{outdir}/ses-0{SESSION_NR}/runNF{run + 1}'
         os.makedirs(run_folder, exist_ok=True)
 
         # for stock pictures we can simply randomise and duplicate the frequency of each image
@@ -115,59 +117,111 @@ if group == 'stock':
                 f.write(f'{image}')
 
 
+    for run in range(NR_TRANS_RUNS):
+
+        # for stock pictures we can simply randomise and duplicate the frequency of each image
+        images_temp = images_list.copy()
+        random.shuffle(images_temp)
+
+        # choose which image should be scrambled (4 per run)
+        scramble_idx = np.arange(len(images_temp))
+        random.shuffle(scramble_idx)
+        scramble_idx = scramble_idx[:4]
+
+        images_NF = []
+        for item_idx, item in enumerate(images_temp):
+            if item_idx not in scramble_idx:
+                images_NF.extend([item] * 2)
+            else:
+                scramble_img_pos = np.array([0, 1])  # decide if the scramble image is the first or the second presented
+                random.shuffle(scramble_img_pos)
+                scramble_img_pos = scramble_img_pos[0]
+
+                if scramble_img_pos == 0:
+                    images_NF.extend(['_scrambled_db/' + item, item])
+                else:
+                    images_NF.extend([item, '_scrambled_db/' + item])
+
+        # save the run order file
+        # the NF script looks for runNFX_group.txt
+        order_filename = f'{ses_folder}/Transfer{run + 1}_{group}.txt'
+
+        with open(order_filename, 'w') as f:
+            for image in images_NF:
+                f.write(f'{image}')
+
+
 elif group == 'matter':
 
-    pass
-    '''
+    # create the session folder
+    ses_folder = f'{outdir}/ses-0{SESSION_NR}'
+    os.makedirs(ses_folder, exist_ok=True)
+
+    # get the ratings of for the stock images
+    matter_images_file = glob.glob(f'{wdir}/matter.txt')[0]
+    images_emo_info = pd.read_excel(f'{wdir}/selected_matter_ratings_info.xlsx')
+
+    images_list = []
+    emo_order = []
+
+    with open(matter_images_file, 'r') as file:
+        for line in file:
+            images_list.append(line[:-1]+'.jpg\n')
+            cur_emo = images_emo_info['Peak Labels'][images_emo_info['Image ID'] == line[:-1]].values[0]
+            emo_order.append(f'{cur_emo}_{images_list[-1]}')
 
 
-    for ses in range(NR_SESSIONS):
+    # prepare images order for the NF runs
+    for run in range(NR_NF_RUNS): # check this later for others
 
-        # create the session folder
-        ses_folder = f'{outdir}/{sub_name}/ses{ses+1}'
-        os.makedirs(ses_folder, exist_ok=True)
+        # create the run folder
+        run_folder = f'{outdir}/ses-0{SESSION_NR}/runNF{run + 1}'
+        os.makedirs(run_folder, exist_ok=True)
 
-        # images already contains only the image names
-        images_list = images
+        # for stock pictures we can simply randomise and duplicate the frequency of each image
+        images_NF_temp = emo_order.copy() #images + emotion label
+        images_NF_temp = shuffle_without_consecutive_duplicates(images_NF_temp)
 
-        # copy the selected images to the current subject folder
-        if ses == 0:
-            shutil.rmtree(f'{outdir}/{sub_name}/matter_images/', ignore_errors=True)
+        #remove emotion label
+        images_NF_temp = [item.split('_')[1] for item in images_NF_temp]
 
-            shutil.copytree(f'{wdir}/{sub_name}/{group}_ratings/{group}_images',
-                        f'{outdir}/{sub_name}/matter_images/')
 
-        # prepare images order for the NF runs
-        for run in range(NR_NF_RUNS):
-            # create the run folder
-            run_folder = f'{outdir}/{sub_name}/ses{ses + 1}/run{run + 1}'
-            os.makedirs(run_folder, exist_ok=True)
+        # choose which image should be scrambled (4 per run)
+        scramble_idx = np.arange(len(images_NF_temp))
+        random.shuffle(scramble_idx)
+        scramble_idx = scramble_idx[:4]
 
-            # for matter pictures we need to randomise the emotions so tha they are not repeated twice consecutively
-            # (otherwise we would have the same emotion for 4 blocks)
-            images_NF_temp = images_list.copy()
-            images_NF_temp = shuffle_without_consecutive_duplicates(images_NF_temp)
-            images_NF = []
-            for item in images_NF_temp:
+        images_NF = []
+        for item_idx, item in enumerate(images_NF_temp):
+            if item_idx not in scramble_idx:
                 images_NF.extend([item] * 2)
+            else:
+                scramble_img_pos = np.array([0, 1])  # decide if the scramble image is the first or the second presented
+                random.shuffle(scramble_img_pos)
+                scramble_img_pos = scramble_img_pos[0]
 
-            print(f'NF run{run+1} images sequence: ')
-            print(images_NF)
-            # save the run order file
-            # the NF script looks for runNFX_group.txt
-            order_filename = f'{run_folder}/runNF{run + 1}_{group}.txt'
+                if scramble_img_pos == 0:
+                    images_NF.extend(['_scrambled_db/' + item, item])
+                else:
+                    images_NF.extend([item, '_scrambled_db/' + item])
 
-            with open(order_filename, 'w') as f:
-                for image in images_NF:
-                    f.write(f'{image}\n')
+        # save the run order file
+        # the NF script looks for runNFX_group.txt
+        order_filename = f'{run_folder}/runNF{run + 1}_{group}.txt'
 
-        # copy also the folder of the neutral images and add the names to the image list to create the order file for the localiser
-        neutral_images_dir = f'{os.path.dirname(os.getcwd())}/images/neutral'
-        shutil.rmtree(f'{outdir}/{sub_name}/matter_images/neutral', ignore_errors=True)
-        shutil.copytree(neutral_images_dir, f'{outdir}/{sub_name}/matter_images/neutral')
+        with open(order_filename, 'w') as f:
+            for image in images_NF:
+                f.write(f'{image}')
 
-        neutral_images = [os.path.basename(image) for image in glob.glob(f'{neutral_images_dir}/*.jpg')]
+    # copy also the folder of the neutral images and add the names to the image list to create the order file for the localiser
+    # get the ratings of for the stock images
+    neutral_images = []
 
+    with open(f'{wdir}/neutral.txt', 'r') as file:
+        for line in file:
+            neutral_images.append(line)
+
+    for run in range(NR_LOC_RUNS):
         # create localiser images folder balancing the frequency that one condition follows the other
         # get balanced sequence
         seq = generate_random_sequence_2cond_maxCons('positive', 'neutral', NR_BLOCKS, balance_factor=0.5,
@@ -190,18 +244,105 @@ elif group == 'matter':
                 idx_pos += 1
 
             elif cond == 'neutral' and idx_neu < NR_BLOCKS / 2:
-                images_localiser.append(f'/neutral/{neutral_images[idx_neu]}')
+                images_localiser.append(f'{neutral_images[idx_neu]}')
                 idx_neu += 1
 
         # save the run order file for the Localiser
         # the Localiser script looks for Localiser_group.txt
-        order_filename = f'{ses_folder}/Localiser_{group}.txt'
+        order_filename = f'{ses_folder}/Localiser{run + 1}_{group}.txt'
 
         with open(order_filename, 'w') as f:
             for image in images_localiser:
-                f.write(f'{image}\n')
-                
-        '''
+                f.write(f'{image}')
+
+    for run in range(NR_RECALL_RUNS):
+
+        # get the ratings of for the stock images
+        matter_images_file = glob.glob(f'{wdir}/matter_EMOinfo.txt')[0]
+        images_list_recall = []
+
+        with open(matter_images_file, 'r') as file:
+            for line in file:
+                images_list_recall.append(line[:-1]+'.jpg\n')
+
+        # for stock pictures we can simply randomise and duplicate the frequency of each image
+        images_temp = images_list_recall.copy()
+        images_temp = shuffle_without_consecutive_duplicates(images_temp)
+
+        images_temp = [item.split('_')[1] for item in images_temp]
+
+        # choose which image should be scrambled (4 per run)
+        scramble_idx = np.arange(len(images_temp))
+        random.shuffle(scramble_idx)
+        scramble_idx = scramble_idx[:4]
+
+        images_NF = []
+        for item_idx, item in enumerate(images_temp):
+            if item_idx not in scramble_idx:
+                images_NF.extend([item] * 2)
+            else:
+                scramble_img_pos = np.array([0, 1])  # decide if the scramble image is the first or the second presented
+                random.shuffle(scramble_img_pos)
+                scramble_img_pos = scramble_img_pos[0]
+
+                if scramble_img_pos == 0:
+                    images_NF.extend(['_scrambled_db/' + item, item])
+                else:
+                    images_NF.extend([item, '_scrambled_db/' + item])
+
+        # save the run order file
+        # the NF script looks for runNFX_group.txt
+        order_filename = f'{ses_folder}/Recall{run + 1}_{group}.txt'
+
+        with open(order_filename, 'w') as f:
+            for image in images_NF:
+                f.write(f'{image}')
+
+    for run in range(NR_TRANS_RUNS):
+
+        # get the ratings of for the stock images
+        matter_images_file = glob.glob(f'{wdir}/matter_EMOinfo.txt')[0]
+        images_list_recall = []
+
+        with open(matter_images_file, 'r') as file:
+            for line in file:
+                images_list_recall.append(line[:-1] + '.jpg\n')
+
+        # for stock pictures we can simply randomise and duplicate the frequency of each image
+        images_temp = images_list_recall.copy()
+        images_temp = shuffle_without_consecutive_duplicates(images_temp)
+
+        images_temp = [item.split('_')[1] for item in images_temp]
+
+        # choose which image should be scrambled (4 per run)
+        scramble_idx = np.arange(len(images_temp))
+        random.shuffle(scramble_idx)
+        scramble_idx = scramble_idx[:4]
+
+        images_NF = []
+        for item_idx, item in enumerate(images_temp):
+            if item_idx not in scramble_idx:
+                images_NF.extend([item] * 2)
+            else:
+                scramble_img_pos = np.array(
+                    [0, 1])  # decide if the scramble image is the first or the second presented
+                random.shuffle(scramble_img_pos)
+                scramble_img_pos = scramble_img_pos[0]
+
+                if scramble_img_pos == 0:
+                    images_NF.extend(['_scrambled_db/' + item, item])
+                else:
+                    images_NF.extend([item, '_scrambled_db/' + item])
+
+        # save the run order file
+        # the NF script looks for runNFX_group.txt
+        order_filename = f'{ses_folder}/Transfer{run + 1}_{group}.txt'
+
+        with open(order_filename, 'w') as f:
+            for image in images_NF:
+                f.write(f'{image}')
+
+
 
 
 

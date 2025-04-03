@@ -1,0 +1,22 @@
+FileVersion:           3
+NrOfContrasts:         2
+NrOfValues:            7
+BaselineInContrasts:   1
+BaselinePosInProtocol: 1
+
+ContrastNames:
+"[-1 +1 0 0 0 0 0]  Image  vs. Baseline"
+"[-1  0 +1 0 +1 +1 +1]  Pure vs. Baseline"
+
+ContrastVectors:
+ -1  1  0 0 0 0 0
+ -1  0  1 0 1 1 1
+ 
+InitialSelectionState:
+1
+1
+
+ContrastColors:
+ 255   0   0
+   0 255   0
+

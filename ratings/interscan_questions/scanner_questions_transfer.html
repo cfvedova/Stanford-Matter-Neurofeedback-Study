@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page Navigation</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+        <!--<form action="#" method="post" class="page visible"> -->
+
+    <form id='info' class="page visible">
+        <h1>Inter-scan questions</h1>
+        <h2>Enter Session Details</h2>
+        <label for="subjectID">Subject ID</label>
+        <input type="text" id="subjectID" name="subjectID" placeholder="Enter Subject ID (e.g., sub-00)" required>
+
+        <label for="sessionNumber">Session Number</label>
+        <input type="number" id="sessionNumber" name="sessionNumber" placeholder="Enter Session Number" min="1" max="5" required>
+
+        <label for="NrNFRuns">Number of NF runs</label>
+        <input type="number" id="NrNFRuns" name="NrNFRuns" placeholder="Enter Number of Transfer Runs" min="1" max="4" required>
+
+        <button type="submit" id="submitInfo" class="submit" disabled>Submit</button>
+    </form>
+
+    <div id="run-questions" class="page">
+        <h2>Rate from 1 to 10 (1 = "Not at All")</h2>
+        <div id="questionnaire-container1"></div>
+        <button type="submit" id="submitRatings" class="submit" disabled>Submit</button>
+    </div>
+
+    <div id="strategy-evaluation" class="page">
+        
+         <h2>Enter Your Answers</h2>
+    
+        <!-- First Answer Container -->
+        <div class="container" id="container1">
+            <h3>Question 1: Which strategies did you use to engage in a positive emotional state?</h3>
+            <textarea id="answer1" class="answer-box" placeholder="Write the answer here..."></textarea>
+        </div>
+
+        <!-- Second Answer Container -->
+        <div class="container" id="container2">
+            <h3>Question 2: Which strategy proved most effective?</h3>
+            <textarea id="answer2" class="answer-box" placeholder="Write the answer here..."></textarea>
+        </div>
+
+        <h3>Rate from 1 to 10 (1 = "Not at All")</h3>
+        <div id="questionnaire-container2"></div>
+        <button type="submit" id="submitStrategyInfo" class="submit" disabled>Submit</button>
+
+    </div>
+
+    <div id="END" class="page">
+    <div class="center-text">
+      <h1>Thanks for filling out the questionnaire!</h1>
+    </div>
+  </div>
+
+  <script src="script.js" defer></script> 
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

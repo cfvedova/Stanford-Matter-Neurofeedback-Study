@@ -1,4 +1,4 @@
-# the script creates .MDM files but first changes the order of the sdm conditions (they might be different due to randomisation in the prt)
+''' This script creates .MDM files but first changes the order of the sdm conditions (they might be different due to randomisation in the prt) '''
 
 import numpy as np
 from bvbabel import prt, sdm
@@ -13,15 +13,15 @@ def reorder_sdm_conditions(sdm_file, cond_order):
         sdm_data_sorted = [sdm_data[1]] + [sdm_data[0]] + sdm_data[2:]
         sdm.write_sdm(sdm_file,hdr,sdm_data_sorted)
 
-wdir = 'D:/NFData/derivatives/rawdata_bv'
+wdir = 'D:/MatterNeurofeedback/derivatives/rawdata_bv'
 
-sub = 'sub-00'
+sub = 'sub-07'
 ses = 1
-RUNS = ['2','3']
+RUNS = ['3','4']
 
 cond_order = ["EmoRecall-Neutral", "EmoRecall-Positive"]
 
-FMR = f'{wdir}/{sub}/ses{ses}/func/{sub}_ses-0{ses}_dir-AP_task-localiser2_run-02_SCCTBL_3DMCTS_LTR_THPFFT0.0090Hz_SD3DSS3.60mm.fmr'
+FMR = f'{wdir}/{sub}/ses-0{ses}/func/{sub}_ses-0{ses}_dir-AP_task-localiser3_run-03_SCCTBL_3DMCTS_LTR_THPFFT0.0090Hz_SD3DSS3.60mm.fmr'
 #doc = bv.open(FMR)
 
 #doc.clear_multistudy_glm_definition()
@@ -30,7 +30,7 @@ print('Creating .MDM')
     
 for run in RUNS:
 
-    fmr_file =  f'{wdir}/{sub}/ses{ses}/func/{sub}_ses-0{ses}_dir-AP_task-localiser{run}_run-0{run}_SCCTBL_3DMCTS_LTR_THPFFT0.0090Hz_SD3DSS3.60mm.fmr'
+    fmr_file =  f'{wdir}/{sub}/ses-0{ses}/func/{sub}_ses-0{ses}_dir-AP_task-localiser{run}_run-0{run}_SCCTBL_3DMCTS_LTR_THPFFT0.0090Hz_SD3DSS3.60mm.fmr'
     sdm_file = f'{fmr_file[:-4]}_z.sdm'
 
     reorder_sdm_conditions(sdm_file, cond_order)

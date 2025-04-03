@@ -11,10 +11,10 @@ from utils.prt import create_prt, write_prt
 sub_name = input('Insert the subject name: ')
 ses = input('Insert the session number: ')
 
-subdir_stim = f'C:/Users/assun/Documents/GitHub/MatterNeurofeedbackStudy/example_data/stim_prep/{sub_name}/ses{ses}'
+subdir_stim = f'C:/Users/assun/Documents/GitHub/MatterNeurofeedbackStudy/example_data/stim_prep/{sub_name}/ses-0{ses}'
 outdir = f'C:/Users/assun/Documents/GitHub/MatterNeurofeedbackStudy/example_data/tbv_prep/{sub_name}'
 # Create a folder for this subject in data_TBV
-subdir_tbv = f'{outdir}/ses{ses}'
+subdir_tbv = f'{outdir}/ses-0{ses}'
 os.makedirs(subdir_tbv, exist_ok=True)
 
 # Copy the template TBV file to subdir_tbv
@@ -180,7 +180,7 @@ RECALL_DURATION = 20
 BLOCK_DURATION =  RECALL_DURATION + REST_DURATION
 
 # load the Localiser images order and create a condition
-localiser_files = glob.glob(f'{subdir_stim}/Localiser*.txt')
+localiser_files = glob.glob(f'{subdir_stim}/Localiser*stock.txt')
 
 for run, localiser_order in enumerate(localiser_files):
 
@@ -272,4 +272,98 @@ for run, localiser_order in enumerate(localiser_files):
 
     prtFolder = f'{subdir_tbv}/TBVFiles/prt/'
     prt_file =f'{os.path.basename(localiser_order)[:-4]}.prt'
+    write_prt(f'{prtFolder}/{prt_file}', prt_hdr, prt_data)
+
+# load the Localiser images order and create a condition
+transfer_files = glob.glob(f'{subdir_stim}/Transfer*.txt')
+
+for run, transfer_order in enumerate(transfer_files):
+
+    localiser_conditions = []
+    with open(transfer_order,'r') as f:
+
+        for line in f.readlines():
+
+            if 'scrambled' in line:
+                localiser_conditions.append('Control')
+            else:
+                localiser_conditions.append('EmoRecall')
+
+    print('Transfer condition order:')
+    print(localiser_conditions)
+
+    condition_names = ['Rest']
+    condition_colors = [[64, 64, 64]]
+
+    # define the condition order in the prt file based on occurrence
+    if localiser_conditions[0] == 'EmoRecall':
+        condition_names += ['EmoRecall', 'Control']
+        condition_colors += [[83, 200, 83], [150, 150, 150]]
+
+    else:
+        condition_names += ['Control', 'EmoRecall']
+        condition_colors += [[150, 150, 150], [83, 200, 83]]
+
+    # create template prt
+    prt_hdr, prt_data_temp = create_prt()
+    prt_hdr['Experiment'] = 'Transfer'
+    prt_hdr['NrOfConditions'] = 3
+
+    prt_data = list()
+
+    for n,condition in enumerate(condition_names):
+
+        temp = {'Start': [],
+                'Stop': []}
+
+        if condition == 'Rest':
+            temp = {'Start': [1],
+                    'Stop': [INITIAL_REST_DURATION]}
+
+            for i in range(N_BLOCKS ):
+                temp['Start'] += [INITIAL_REST_DURATION  + RECALL_DURATION + (BLOCK_DURATION)*i + 1]
+                temp['Stop'] += [INITIAL_REST_DURATION  + RECALL_DURATION + (BLOCK_DURATION)*i + REST_DURATION]
+
+
+        elif condition == 'EmoRecall':
+
+            temp = {'Start': [],
+                    'Stop': []}
+
+            idx_pos = [i for i, cond in enumerate(localiser_conditions) if cond == 'EmoRecall']
+
+            for i in idx_pos:
+                if i == 0:
+                    temp['Start'] += [INITIAL_REST_DURATION  +1]
+                    temp['Stop'] += [INITIAL_REST_DURATION  + RECALL_DURATION]
+                else:
+                    temp['Start'] += [INITIAL_REST_DURATION + i*BLOCK_DURATION  +1]
+                    temp['Stop'] += [INITIAL_REST_DURATION + i*BLOCK_DURATION  + RECALL_DURATION]
+
+        elif condition == 'Control':
+
+            temp = {'Start': [],
+                    'Stop': []}
+
+            idx_neu = [i for i, cond in enumerate(localiser_conditions) if cond == 'Control']
+
+            for i in idx_neu:
+                if i == 0:
+                    temp['Start'] += [INITIAL_REST_DURATION  + 1]
+                    temp['Stop'] += [INITIAL_REST_DURATION  + RECALL_DURATION]
+                else:
+                    temp['Start'] += [INITIAL_REST_DURATION + i * BLOCK_DURATION  + 1]
+                    temp['Stop'] += [INITIAL_REST_DURATION + i * BLOCK_DURATION  + RECALL_DURATION]
+
+        temp_data = copy.deepcopy(prt_data_temp[0])
+        temp_data['NameOfCondition'] = condition_names[n]
+        temp_data['NrOfOccurances'] = len(temp['Start'])
+        temp_data['Time start'] = temp['Start']
+        temp_data['Time stop'] = temp['Stop']
+        temp_data['Color'] = condition_colors[n]
+
+        prt_data.append(temp_data)
+
+    prtFolder = f'{subdir_tbv}/TBVFiles/prt/'
+    prt_file =f'{os.path.basename(transfer_order)[:-4]}.prt'
     write_prt(f'{prtFolder}/{prt_file}', prt_hdr, prt_data)

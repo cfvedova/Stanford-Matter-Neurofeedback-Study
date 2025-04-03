@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page Navigation</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <div id="instructions" class="page visible">
+    <h1>Select 12 images with high positive valence in the following pages.<br><br>
+    Click on an image to select or deselect it.
+    You can use the NEXT and PREVIOUS buttons to move to different image subsets and change your selection.
+    Once 12 images have been selected, a SUBMIT button will be enabled on the last page. 
+    After submitting your selection, you will be asked to rate the images. You have to indicate the valence level of the selected images on a 10-point scale
+    (1 = Neutral, 10 = Very Positive). Additionally, you have to identify which of the listed positive emotions are elicited by the image and rate their intensity on a 10-point scale. 
+    Select the 0 button if a particular emotion is not elicited by the image.<br><br>Click on START to continue.
+    </h1>
+    <button class="button" onclick="goToPage('page1')">Start</button>
+  </div>
+
+  <div id="page1" class="page">
+    <div id="imageContainer1" class="people"></div>
+      <p id="selection-info"> </p>
+      <div class="button-container">
+        <button class="button" onclick="goToPage('page2')">Next</button>
+      </div>
+  </div>
+
+  <div id="page2" class="page">
+    <div id="imageContainer2" class="scenes"></div>
+      <p id="selection-info"> </p>
+      <div class="button-container">
+        <button class="button" onclick="goToPage('page1')">Previous</button>
+        <button class="button" onclick="goToPage('page3')">Next</button>
+      </div>
+  </div>
+
+  <div id="page3" class="page">
+    <div id="imageContainer3" class="animals"></div>
+      <p id="selection-info"> </p>
+      <div class="button-container">
+        <button class="button" onclick="goToPage('page2')">Previous</button>
+        <button class="button" onclick="goToPage('page4')">Next</button>
+      </div>
+  </div>
+
+
+  <div id="page4" class="page">
+    <div id="imageContainer4" class="objects"></div>
+      <p id="selection-info"> </p>
+      <div class="button-container">
+        <button class="button" onclick="goToPage('page3')">Previous</button>
+        <button class="button" id="Submit" onclick="goToPage('page5')">Submit</button>
+      </div>
+  </div>
+
+  <div id="page5" class="page">
+    <div class="center-text">
+      <h1>Rate the valence of the selected images. </h1>
+    </div>
+      <div class="button-container">
+        <button class="button" onclick="goToPage('page4')">Previous</button>
+        <button class="button" onclick="goToPage('page6')">Next</button>
+      </div>
+
+  </div>
+
+  <div id="page6" class="page">
+    <div id="ratingLoop1" class="rate"></div>
+      <div class="button-container-ratings">
+        <button class="button" id="nextRating1" onclick="handleNextButtonClick('instructions_neutral')" disabled>Next</button>
+      </div>
+  </div>
+
+  <div id="instructions_neutral" class="page">
+    <h1>Select 12 Neutral images in the following pages.<br><br>
+    Click on an image to select or deselect it.
+    Once 12 images have been selected, a SUBMIT button will be enabled. 
+    After submitting your selection, you will be asked to rate the valence of the selected images on a 10-point scale (1 = Neutral, 10 = Very Positive). Additionally, you have to identify if any of the listed positive emotions are elicited by the image and rate their intensity on a 10-point scale. Select the 0 button if a particular emotion is not elicited by the image.<br><br>Click on START to continue.
+    </h1>
+    <button class="button" onclick="goToPage('page7')">Start</button>
+  </div>
+
+  <div id="page7" class="page">
+    <div id="imageContainer7" class="neutral"></div>
+      <p id="selection-info"> </p>
+      <div class="button-container">
+       <button class="button" id="Submit2" onclick="goToPage('page8')">Submit</button>
+      </div>
+  </div>
+
+    <div id="page8" class="page">
+    <div class="center-text">
+      <h1>Rate the valence of the selected images. </h1>
+    </div>
+      <div class="button-container">
+        <button class="button" onclick="goToPage('page7')">Previous</button>
+        <button class="button" onclick="goToPage('page9')">Next</button>
+      </div>
+  </div>
+
+  <div id="page9" class="page">
+    <div id="ratingLoop2" class="rate"></div>
+      <div class="button-container-ratings">
+        <button class="button" id="nextRating2" onclick="handleNextButtonClick('end')"disabled>Next</button>
+      </div>
+  </div>
+
+  <div id="end" class="page">
+    <div class="center-text">
+      <h1>End of the experiment! Results are saved to your Download folder.</h1>
+    </div>
+  </div>
+
+  <script src="script.js" defer></script> 
+
+</body>
+</html>

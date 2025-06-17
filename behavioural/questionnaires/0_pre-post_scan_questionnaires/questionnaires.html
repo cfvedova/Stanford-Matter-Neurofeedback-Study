@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page Navigation</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+        <!--<form action="#" method="post" class="page visible"> -->
+
+    <form id='info' class="page visible">
+        <h2>Enter Session Details</h2>
+        <label for="subjectID">Subject ID</label>
+        <input type="text" id="subjectID" name="subjectID" placeholder="Enter Subject ID (e.g., sub-00)" required>
+
+        <label for="sessionNumber">Session Number</label>
+        <input type="number" id="sessionNumber" name="sessionNumber" placeholder="Enter Session Number" min="1" max="5" required>
+
+        <label for="sessionDescription">Session Description</label>
+        <select id="sessionDescription" name="sessionDescription" required>
+            <option value="" disabled selected>Select an option</option>
+            <option value="before">Before Scan</option>
+            <option value="after">After Scan</option>
+        </select>
+
+        <button type="submit" id="submitInfo" class="submit" disabled>Submit</button>
+    </form>
+
+    <div id="PANAS" class="page">
+
+        <h1>PANAS Scale</h1>
+        <p>Indicate the extent you feel this way right now.</p>
+        <form id="PANASForm">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Very Slightly or Not at All (1)</th>
+                        <th>A Little (2)</th>
+                        <th>Moderately (3)</th>
+                        <th>Quite a Bit (4)</th>
+                        <th>Extremely (5)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Dynamically generated rows will go here -->
+                </tbody>
+            </table>
+            <button type="button" class="submit" id= "submitPANAS" disabled>Submit</button>
+        </form>
+    </div>
+
+    <div id="POMS" class="page">
+        <h1>POMS Scale</h1>
+        <p>Indicate the extent you feel this way right now.</p>
+        <form id="POMSForm">
+            <div class="tables-container">
+                <div class="table-container" style="flex: 1;">
+                    <table id="upperTable">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Not at All (1)</th>
+                                <th>A Little (2)</th>
+                                <th>Moderately (3)</th>
+                                <th>Quite a Lot (4)</th>
+                                <th>Extremely (5)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dynamically generated rows will go here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="table-container" style="flex: 1;">
+                    <table id="lowerTable">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Not at All (1)</th>
+                                <th>A Little (2)</th>
+                                <th>Moderately (3)</th>
+                                <th>Quite a Lot (4)</th>
+                                <th>Extremely (5)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dynamically generated rows will go here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <button type="button" class="submit" id="submitPOMS" disabled>Submit</button>
+        </form>
+    </div>
+
+
+
+    <div id="END" class="page">
+    <div class="center-text">
+      <h1>Thanks for filling out the questionnaires!</h1>
+    </div>
+  </div>
+
+  <script src="script.js" defer></script> 
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,2 +1,0 @@
-Create script for offline fmr preprocessing and roi selection
- 

@@ -1,8 +1,8 @@
 '''
 
-Recall run script script for Matter Project
+Localiser script for Matter Project
 
-This script can be used for both Matter and NoMatter Neurofeedback groups.
+This script can be used for both Matter and Standard Neurofeedback groups.
 The timing of the stimulation is locked with the scanner trigger.
 
 For each subject, the images should be provided in advance and copied in the ./images/ folder.
@@ -11,7 +11,6 @@ The images order for the Localiser and the NF runs should also be provided in th
 The ./data/sub-XX/ses-XX should contain:
 
 LocaliserX_group.txt
-RecallX_group.txt
 /runNF1/
     runNF1_group.txt
     runNF1_group.prt
@@ -35,7 +34,7 @@ Important settings:
     NR_BLOCKS = 16 # number of trials within the run, it has to match the number of images in the image order file
 
     # set the prt file to define the condition timings
-    hdr, prt_data = prt.read_prt(wdir + '/prt/Recall_stimPC.prt')
+    hdr, prt_data = prt.read_prt(wdir + '/prt/Localiser_stimPC.prt')
 
 
 '''
@@ -71,7 +70,7 @@ design.defaults.experiment_foreground_colour = misc.constants.C_WHITE
 
 
 # INSTRUCTIONS
-instructions_header = "You are about to start the Recall Run {0}"
+instructions_header = "You are about to start the Localiser Run"
 
 # NOTE: Please feel free to change the instructions
 instructions_content = \
@@ -83,7 +82,6 @@ instructions_content = \
 
     In the EMOTION RECALL period an image will be displayed.
     Try to feel the emotion suggested by the image as much as possible.
-    Try to not engage when viewing scrambled images.
 
     """
 end_header = "Run is now finished"
@@ -103,7 +101,7 @@ io.DataFile.logging = False
 
 
 # DESIGN
-exp = design.Experiment("Recall")
+exp = design.Experiment("Localiser")
 exp.set_log_level(0)
 
 
@@ -124,12 +122,13 @@ trigger = exp.keyboard
 
 # PROTOCOL TIMING
 # Get condition name and timings from prt file
-hdr, prt_data = prt.read_prt(wdir + '/prt/Recall_stimPC.prt')
+hdr, prt_data = prt.read_prt(wdir + '/prt/Localiser_stimPC.prt')
 condition_names = []
 
 # NOTE: the script assumes that the condition order is fixed in the protocol
 # 0 - Rest
-# 1 - Recall
+# 1 - Image
+# 2 - Recall
 
 
 for condition in prt_data:
@@ -165,7 +164,7 @@ for i in range(NR_VOLUMES):
 
 # IMAGES
 # Get images path
-images_folder = f'{wdir}/images/matter_images' 
+images_folder = f'{wdir}/images/stock_images' 
 
 # CONDITION CUES
 #fixcross = stimuli.FixCross(colour=misc.constants.C_WHITE)  # Create fixation cross
@@ -187,13 +186,13 @@ sub = i.get()
 i = io.TextInput("Session: ")
 session = int(i.get())
 
-i = io.TextInput("Recall Run: ")
+i = io.TextInput("Localiser Run: ")
 run = int(i.get())
 
 
 # Check that the inputs are correct for the current subject
 
-image_file = glob.glob(f'{wdir}/data/{sub}/ses-0{session}/Recall{run}*.txt')[0]
+image_file = glob.glob(f'{wdir}/data/{sub}/ses-0{session}/Localiser{run}*stock.txt')[0]
 if not os.path.exists(image_file):
     print(f'Image order file {image_file} missing!')
     exit(1)
@@ -205,14 +204,16 @@ with open(image_file) as f:
     for line in f:
         images_list.append(line[:-1]) #remove '\n'
 
-        if not os.path.exists(f'{images_folder}/{line[:-1]}') and not os.path.exists(f'{images_folder}{line[:-1]}'):
-            print(f'Missing image {line[:-1]} in the images folder\n')
-            print('Currently available images: \n')
-            cur_images = glob.glob(f'{images_folder}/*jpg')
+        if line[:-1]:
 
-            for img in cur_images:
-                print(os.path.basename(img))
-            exit(1)
+            if not os.path.exists(f'{images_folder}/{line[:-1]}'):
+                print(f'Missing image {line[:-1]} in the images folder\n')
+                print('Currently available images: \n')
+                cur_images = glob.glob(f'{images_folder}/*jpg')
+
+                for img in cur_images:
+                    print(os.path.basename(img))
+                exit(1)
 
 
 # Check that the order file contains the expected number of images
@@ -233,19 +234,19 @@ os.makedirs(outdir, exist_ok=True)
 
 # LOGGING SETTINGS
 # Save a log file and set level for msg to be received
-logging.basicConfig(filename = f'{outdir}/Recall{run}_{group}.log', 
+logging.basicConfig(filename = f'{outdir}/Localiser{run}_{group}.log', 
                                 level=logging.INFO,
                                 filemode = 'w',
                                 format ='%(message)s')
 
 
 # start logging the esperiment informations
-logging.info('Neuroscience of Happiness - Recall\n')
+logging.info('Neuroscience of Happiness - Neurofeedback\n')
 logging.info(f'SUBJECT INFO')
 logging.info('-----------')
 logging.info(f'Subject ID: {sub}')
 logging.info(f'Session: {session}')
-logging.info(f'Recall Run: {run}')
+logging.info(f'Localiser Run: {run}')
 logging.info(f'Group: {group}\n')
 
 logging.info(f'DESIGN INFO')
@@ -314,11 +315,7 @@ for block in exp.blocks:
 
                 print(f'\n{condition_names[1]}')
                 #present a new cue
-                if 'scrambled' in images_list[image_count]:
-                    img_path = f'{images_folder}{images_list[image_count]}'.replace('\\','/')
-                else:
-                    img_path = f'{images_folder}/{images_list[image_count]}'.replace('\\','/')
-                image = stimuli.Picture(img_path)  
+                image = stimuli.Picture(f'{images_folder}/{images_list[image_count]}'.replace('\\','/'))  
                 image.present()
 
                 image_count += 1

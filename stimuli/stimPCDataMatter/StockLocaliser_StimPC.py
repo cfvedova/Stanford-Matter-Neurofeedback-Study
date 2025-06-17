@@ -2,7 +2,7 @@
 
 Localiser script for Matter Project
 
-This script can be used for both Matter and NoMatter Neurofeedback groups.
+This script can be used for both Matter and Standard Neurofeedback groups.
 The timing of the stimulation is locked with the scanner trigger.
 
 For each subject, the images should be provided in advance and copied in the ./images/ folder.

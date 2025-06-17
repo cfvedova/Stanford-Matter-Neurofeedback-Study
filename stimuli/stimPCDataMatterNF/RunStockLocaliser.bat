@@ -1,0 +1,1 @@
+call "C:\Users\MRIUser\miniconda3\Scripts\activate.bat" real-time_py38 & cd "D:\HappinessProject\Neurofeedback\stimPCDataMatterNF" & python StockLocaliser_StimPC.py

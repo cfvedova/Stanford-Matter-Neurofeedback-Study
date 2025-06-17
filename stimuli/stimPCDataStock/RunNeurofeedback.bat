@@ -1,0 +1,1 @@
+call "C:\Users\MRIUser\miniconda3\Scripts\activate.bat" real-time_py38 & cd "D:\HappinessProject\Neurofeedback\stimPCDataStock" & python StockNF_StimPC_movingWinBas_offline_test_updatedDetrending.py

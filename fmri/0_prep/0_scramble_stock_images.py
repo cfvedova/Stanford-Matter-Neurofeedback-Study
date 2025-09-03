@@ -3,7 +3,7 @@
 Prepare scramble Stock images
 
 This script creates scrambled version of the stock pictures to be used as control condition during the NF runs of the
-Standard NF group.
+Standard NF group. It needs to run only one time at the beginning of the study!
 
 '''
 

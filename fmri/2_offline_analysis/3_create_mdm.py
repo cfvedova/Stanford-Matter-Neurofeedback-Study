@@ -8,7 +8,7 @@ This script will MDM files (a file containing a list of single SDM files) but fi
 NOTE: Currently, only the change of the condition order and zscoring of the SDM is performed. MDM creation was done via BV GUI.
 Run the FFX muli-run GLM from BV GUI: z-score, SPST, AR2 using the zscored SDMs
 
- '''
+'''
 
 import numpy as np
 from bvbabel import prt, sdm
